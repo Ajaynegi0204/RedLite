@@ -13,6 +13,7 @@ using namespace std;
 
 static RedisServer *globalServer =  nullptr;
 
+
 RedisServer::RedisServer(int port): port(port), server_socket(-1), running(true){
     globalServer = this;
 }
@@ -55,6 +56,7 @@ void RedisServer::run() {
             cerr<< "Error accepting connection" << endl;
             break;
         }
+
         threads.emplace_back([client_socket, &handler]() {
                 char buffer[1024];
                 while (true) {
@@ -72,5 +74,5 @@ void RedisServer::run() {
     for (auto &thread : threads) {
         if (thread.joinable()) thread.join();
     }
-    
+
 }

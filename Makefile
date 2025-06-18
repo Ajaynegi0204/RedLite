@@ -11,6 +11,7 @@ TARGET = my_redis_server
 
 all: $(TARGET)
 
+
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
