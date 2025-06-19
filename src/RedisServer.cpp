@@ -3,24 +3,47 @@
 //
 
 #include "../include/RedisServer.h"
-#include "../include/RedisCommandHandler.h""
+#include "../include/RedisCommandHandler.h"
+#include "../include/RedisDatabase.h"
 #include <bits/stdc++.h>
 #include <sys/socket.h>
 #include<unistd.h>
 #include<netinet/in.h>
 #include<thread>
+#include <csignal>
+#include<signal.h>
 using namespace std;
 
 static RedisServer *globalServer =  nullptr;
 
+void signalHandler(int signum) {
+    if (globalServer) {
+        cout<< "Received signal " << signum << ".. Shutting Down..."<<endl;
+        globalServer->shutdown();
+    }
+    exit(signum);
+}
+
+void RedisServer::setupSignalHandler() {
+    signal(SIGINT, signalHandler);
+}
 
 RedisServer::RedisServer(int port): port(port), server_socket(-1), running(true){
     globalServer = this;
+    setupSignalHandler();
 }
 
 void RedisServer::shutdown() {
     running = false;
-    if (server_socket != -1) close(server_socket);
+    if (server_socket != -1) {
+        // persist database before shutdown;
+        if (!RedisDatabase::getInstance().dump("dump.redlite")) {
+            cerr << "Failed to persist database." << endl;
+        } else {
+            cout << "Database persisted successfully to dump.redlite" << endl;
+        }
+        close(server_socket);
+    }
     cout<< "Server shutdown" << endl;
 }
 
@@ -73,6 +96,13 @@ void RedisServer::run() {
 
     for (auto &thread : threads) {
         if (thread.joinable()) thread.join();
+    }
+
+    //Persist storage, before shutting down;
+    if (!RedisDatabase::getInstance().dump("dump.redlite")) {
+        cerr << "Failed to persist database." << endl;
+    } else {
+        cout << "Database persisted successfully to dump.redlite" << endl;
     }
 
 }
